@@ -1,73 +1,83 @@
 import tkinter as tk
-from tkinter import messagebox
 
-def add(a, b):
-    return a + b
+class Calculator(tk.Tk):
+    def __init__(self):
+        super().__init__()
 
-def subtract(a, b):
-    return a - b
+        self.title("Calculatrice")
+        self.geometry("300x400")
+        self.resizable(False, False)
 
-def multiply(a, b):
-    return a * b
+        self.expression = ""
 
-def divide(a, b):
-    if b == 0:
-        raise ValueError("Division par zéro impossible")
-    return a / b
+        # Affichage (Entry non éditable par l’utilisateur directement)
+        self.entry = tk.Entry(self, font=("Arial", 24), borderwidth=2, relief="ridge", justify="right")
+        self.entry.grid(row=0, column=0, columnspan=4, sticky="nsew", padx=10, pady=10)
+        self.entry.configure(state='readonly')
 
-def calculate():
-    try:
-        num1 = float(entry_num1.get())
-        num2 = float(entry_num2.get())
-        op = operation.get()
+        # Création des boutons
+        buttons = [
+            ('C', 1, 0), ('±', 1, 1), ('%', 1, 2), ('/', 1, 3),
+            ('7', 2, 0), ('8', 2, 1), ('9', 2, 2), ('*', 2, 3),
+            ('4', 3, 0), ('5', 3, 1), ('6', 3, 2), ('-', 3, 3),
+            ('1', 4, 0), ('2', 4, 1), ('3', 4, 2), ('+', 4, 3),
+            ('0', 5, 0, 2), ('.', 5, 2), ('=', 5, 3),
+        ]
 
-        if op == '+':
-            result = add(num1, num2)
-        elif op == '-':
-            result = subtract(num1, num2)
-        elif op == '*':
-            result = multiply(num1, num2)
-        elif op == '/':
-            result = divide(num1, num2)
+        for (text, row, col, colspan) in [(b[0], b[1], b[2], b[3] if len(b) > 3 else 1) for b in buttons]:
+            button = tk.Button(self, text=text, font=("Arial", 18), command=lambda t=text: self.on_button_click(t))
+            button.grid(row=row, column=col, columnspan=colspan, sticky="nsew", padx=5, pady=5)
+
+        # Configuration des poids pour que les boutons s’étendent correctement
+        for i in range(6):
+            self.grid_rowconfigure(i, weight=1)
+        for i in range(4):
+            self.grid_columnconfigure(i, weight=1)
+
+    def on_button_click(self, char):
+        if char == 'C':
+            self.expression = ""
+            self.update_entry()
+        elif char == '±':
+            # Changer le signe du nombre en cours
+            if self.expression:
+                if self.expression.startswith('-'):
+                    self.expression = self.expression[1:]
+                else:
+                    self.expression = '-' + self.expression
+                self.update_entry()
+        elif char == '=':
+            try:
+                # Évaluer l'expression mathématique
+                result = str(eval(self.expression))
+                self.expression = result
+                self.update_entry()
+            except Exception:
+                self.expression = ""
+                self.update_entry()
+                self.entry.configure(state='normal')
+                self.entry.delete(0, tk.END)
+                self.entry.insert(0, "Erreur")
+                self.entry.configure(state='readonly')
+        elif char == '%':
+            try:
+                val = float(self.expression)
+                val /= 100
+                self.expression = str(val)
+                self.update_entry()
+            except Exception:
+                pass
         else:
-            messagebox.showerror("Erreur", "Opération invalide")
-            return
+            self.expression += char
+            self.update_entry()
 
-        label_result.config(text=f"Résultat : {result}")
+    def update_entry(self):
+        self.entry.configure(state='normal')
+        self.entry.delete(0, tk.END)
+        self.entry.insert(0, self.expression)
+        self.entry.configure(state='readonly')
 
-    except ValueError as ve:
-        messagebox.showerror("Erreur", f"Erreur de saisie : {ve}")
-    except Exception as e:
-        messagebox.showerror("Erreur", f"Erreur inattendue : {e}")
+if __name__ == "__main__":
+    calc = Calculator()
+    calc.mainloop()
 
-# Création de la fenêtre principale
-root = tk.Tk()
-root.title("Calculatrice")
-
-# Entrée du premier nombre
-tk.Label(root, text="Premier nombre :").grid(row=0, column=0, padx=10, pady=5)
-entry_num1 = tk.Entry(root)
-entry_num1.grid(row=0, column=1, padx=10, pady=5)
-
-# Entrée du deuxième nombre
-tk.Label(root, text="Deuxième nombre :").grid(row=1, column=0, padx=10, pady=5)
-entry_num2 = tk.Entry(root)
-entry_num2.grid(row=1, column=1, padx=10, pady=5)
-
-# Choix de l’opération via un menu déroulant
-tk.Label(root, text="Opération :").grid(row=2, column=0, padx=10, pady=5)
-operation = tk.StringVar(root)
-operation.set('+')  # valeur par défaut
-option_menu = tk.OptionMenu(root, operation, '+', '-', '*', '/')
-option_menu.grid(row=2, column=1, padx=10, pady=5)
-
-# Bouton calculer
-btn_calculate = tk.Button(root, text="Calculer", command=calculate)
-btn_calculate.grid(row=3, column=0, columnspan=2, pady=10)
-
-# Label pour afficher le résultat
-label_result = tk.Label(root, text="Résultat : ")
-label_result.grid(row=4, column=0, columnspan=2, pady=10)
-
-# Boucle principale Tkinter
-root.mainloop()
